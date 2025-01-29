@@ -135,17 +135,17 @@ const travelApplicationSections = [
     ],
   },
 
-  {
-    title: "Attachments",
-    fields: [
-      { label: "Visa Application", key: "visaApplication" },
-      { label: "Scanned Passport", key: "scannedPassport" },
-      {
-        label: "Visa Terms and Conditions",
-        key: "visaTermsAndConditionsDocument",
-      },
-    ],
-  },
+  // {
+  //   title: "Attachments",
+  //   fields: [
+  //     { label: "Visa Application", key: "visaApplication" },
+  //     { label: "Scanned Passport", key: "scannedPassport" },
+  //     {
+  //       label: "Visa Terms and Conditions",
+  //       key: "visaTermsAndConditionsDocument",
+  //     },
+  //   ],
+  // },
 ];
 
 const studentApplicationSections = [
