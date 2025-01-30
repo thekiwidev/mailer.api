@@ -32,25 +32,25 @@ const handleUpload = (req, res, next) => {
   });
 };
 
-// Configure Nodemailer transporter // @note: gmail email config
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_EMAIL_KEY,
-    pass: process.env.GMAIL_EMAIL_VALUE,
-  },
-});
-
-// Configure Nodemailer transporter // @note: custom email config
+// // Configure Nodemailer transporter // @note: gmail email config
 // const transporter = nodemailer.createTransport({
-//   host: "lon113.truehost.cloud", // Replace with your custom domain's SMTP host
-//   port: 465, // Commonly used port for SMTP (use 465 for secure connections) or 587 for TLS
-//   secure: true, // Set to true if using port 465 for secure connections
+//   service: "gmail",
 //   auth: {
-//     user: process.env.CUSTOM_EMAIL_KEY, // Your custom email address
-//     pass: process.env.CUSTOM_EMAIL_VALUE, // Your email account password or app-specific password
+//     user: process.env.GMAIL_EMAIL_KEY,
+//     pass: process.env.GMAIL_EMAIL_VALUE,
 //   },
 // });
+
+// Configure Nodemailer transporter // @note: custom email config
+const transporter = nodemailer.createTransport({
+  host: "lon113.truehost.cloud", // Replace with your custom domain's SMTP host
+  port: 465, // Commonly used port for SMTP (use 465 for secure connections) or 587 for TLS
+  secure: true, // Set to true if using port 465 for secure connections
+  auth: {
+    user: process.env.CUSTOM_EMAIL_KEY, // Your custom email address
+    pass: process.env.CUSTOM_EMAIL_VALUE, // Your email account password or app-specific password
+  },
+});
 
 async function travelApplicationMailer(req, res) {
   try {
