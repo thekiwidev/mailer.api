@@ -253,34 +253,42 @@ const studentApplicationSections = [
 ];
 
 function generateApplicationHTML(data, applicationSections) {
-  return `
-    <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
-      <h1 class="text-3xl font-bold text-center mb-8">${
-        data.firstName
-      }'s Travel Application Details</h1>
-      
+  return /*html*/ `
+    <div style="max-width: 56rem; margin-left: auto; margin-right: auto; background-color: white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); border-radius: 0.5rem; padding: 2rem; border: 1px solid #bbf7d0">
+      <h1 style="font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; margin-bottom: 2rem; color: #153615;">
+        ${data.firstName}'s Travel Application Details
+      </h1>
+    
       ${applicationSections
         .map(
-          (section) => `
-        <section class="mb-8">
-          <h2 class="text-xl font-semibold mb-4">${section.title}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-            ${section.fields
-              .map((field) => {
-                const value = data[field.key];
-                return `
-                <div>
-                  <p>
-                    <strong class="text-gray-500">${field.label}:</strong>
-                    ${Array.isArray(value) ? value.join(", ") : value || "NIL"}
-                  </p>
-                </div>
-              `;
-              })
-              .join("")}
-          </div>
-        </section>
-      `
+          (section) => /*html*/ `
+          <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; margin-bottom: 1rem;">
+              ${section.title}
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 1rem; color: #4a5568;">
+              ${section.fields
+                .map((field) => {
+                  const value = data[field.key];
+                  return /*html*/ `
+                  <div>
+                    <p>
+                      <strong style="color: #718096;">${field.label}:</strong>
+                      <span style="color: #202020">
+                        ${
+                          Array.isArray(value)
+                            ? value.join(", ")
+                            : value || "NIL"
+                        }
+                      </span>
+                    </p>
+                  </div>
+                `;
+                })
+                .join("")}
+            </div>
+          </section>
+        `
         )
         .join("")}
     </div>

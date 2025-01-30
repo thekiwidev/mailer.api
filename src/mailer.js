@@ -32,33 +32,34 @@ const handleUpload = (req, res, next) => {
   });
 };
 
-// Configure Nodemailer transporter
+// Configure Nodemailer transporter // @note: gmail email config
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_KEY || "temp.user@email.com",
-    pass: process.env.EMAIL_VALUE || "$tr0ngP@$$",
+    user: process.env.GMAIL_EMAIL_KEY,
+    pass: process.env.GMAIL_EMAIL_VALUE,
   },
 });
+
+// Configure Nodemailer transporter // @note: custom email config
+// const transporter = nodemailer.createTransport({
+//   host: "lon113.truehost.cloud", // Replace with your custom domain's SMTP host
+//   port: 465, // Commonly used port for SMTP (use 465 for secure connections) or 587 for TLS
+//   secure: true, // Set to true if using port 465 for secure connections
+//   auth: {
+//     user: process.env.CUSTOM_EMAIL_KEY, // Your custom email address
+//     pass: process.env.CUSTOM_EMAIL_VALUE, // Your email account password or app-specific password
+//   },
+// });
 
 async function travelApplicationMailer(req, res) {
   try {
     const data = req.body;
     const files = req.files || [];
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script src="https://cdn.tailwindcss.com"></script>
-        <title>Travel Application</title>
-      </head>
-      <body>
-        ${generateApplicationHTML(data, travelApplicationSections)}
-      </body>
-      </html>
-    `;
+    const htmlContent = generateApplicationHTML(
+      data,
+      travelApplicationSections
+    );
 
     // Prepare attachments array
     const attachments = files.map((file) => ({
@@ -69,8 +70,8 @@ async function travelApplicationMailer(req, res) {
 
     // Configure email options
     const mailOptions = {
-      from: '"Travel Application System" <noreply@travelapp.com>',
-      to: process.env.RECIPIENT_EMAIL || "recipient@email.com",
+      from: "Travel Application System",
+      to: process.env.RECIPIENT_EMAIL,
       subject: `New Travel Application from ${data.firstName}`,
       html: htmlContent,
       attachments: attachments,
@@ -95,8 +96,8 @@ async function studentApplicationMailer(req, res) {
 
     // Configure email options
     const mailOptions = {
-      from: '"Student Application System" <noreply@studentapp.com>',
-      to: process.env.RECIPIENT_EMAIL || "recipient@email.com",
+      from: "Student Application System",
+      to: process.env.RECIPIENT_EMAIL,
       subject: `New Student Application from ${data.firstName}`,
       html: htmlContent,
     };
