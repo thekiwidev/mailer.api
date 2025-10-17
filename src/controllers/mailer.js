@@ -116,11 +116,6 @@ async function travelApplicationMailer(req, res) {
     console.error("   Code:", error.code);
     console.error("   Command:", error.command);
     console.error("   Full stack:", error.stack);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM_PASS);
-    console.log("ENV: ", process.env.RECIPIENT_EMAIL);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_USER);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_PASS);
 
     res.status(500).json({
       error: "Failed to submit application",
@@ -167,6 +162,11 @@ async function studentApplicationMailer(req, res) {
     console.error("   Code:", error.code);
     console.error("   Command:", error.command);
     console.error("   Full stack:", error.stack);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM_PASS);
+    console.log("ENV: ", process.env.RECIPIENT_EMAIL);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_USER);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_PASS);
 
     res.status(500).json({
       error: "Failed to submit application",
