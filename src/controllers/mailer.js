@@ -50,17 +50,28 @@ const transporter = nodemailer.createTransport({
     user: process.env.CUSTOM_EMAIL_SMTP_USER, // SMTP authentication user
     pass: process.env.CUSTOM_EMAIL_SMTP_PASS, // SMTP authentication password
   },
-  connectionTimeout: 15000, // 15 seconds
-  socketTimeout: 15000, // 15 seconds
+  connectionTimeout: 30000, // 30 seconds (increased from 15)
+  socketTimeout: 30000, // 30 seconds (increased from 15)
+  greetingTimeout: 10000, // Greeting timeout
+  logger: true, // Enable logging
+  debug: false, // Set to true for detailed debugging
   tls: {
     rejectUnauthorized: false, // Allow self-signed certificates
   },
 });
 
-// Verify transporter connection
+// Verify transporter connection on startup
+console.log("🔧 SMTP Configuration:");
+console.log("   Host:", process.env.CUSTOM_EMAIL_HOST);
+console.log("   Port:", process.env.CUSTOM_EMAIL_PORT);
+console.log("   Secure:", process.env.CUSTOM_EMAIL_SECURE);
+console.log("   User:", process.env.CUSTOM_EMAIL_SMTP_USER);
+
 transporter.verify((error, success) => {
   if (error) {
-    console.error("❌ SMTP Connection Error:", error);
+    console.error("❌ SMTP Connection Error at startup:", error.message);
+    console.error("   Error code:", error.code);
+    console.error("   Full error:", error);
   } else {
     console.log("✅ SMTP Connection Verified Successfully");
   }
@@ -100,13 +111,28 @@ async function travelApplicationMailer(req, res) {
     console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
-    console.error("❌ Error submitting travel application:", error);
+    console.error("❌ Error submitting travel application");
+    console.error("   Message:", error.message);
+    console.error("   Code:", error.code);
+    console.error("   Command:", error.command);
+    console.error("   Full stack:", error.stack);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM_PASS);
+    console.log("ENV: ", process.env.RECIPIENT_EMAIL);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_USER);
+    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_PASS);
+
     res.status(500).json({
       error: "Failed to submit application",
       hasError: true,
       errorCode: 500,
       message: error.message,
       errorObj: error,
+      diagnostics: {
+        timestamp: new Date().toISOString(),
+        errorCode: error.code,
+        errorCommand: error.command,
+      },
     });
   }
 }
@@ -136,13 +162,23 @@ async function studentApplicationMailer(req, res) {
     console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
-    console.error("❌ Error submitting student application:", error);
+    console.error("❌ Error submitting student application");
+    console.error("   Message:", error.message);
+    console.error("   Code:", error.code);
+    console.error("   Command:", error.command);
+    console.error("   Full stack:", error.stack);
+
     res.status(500).json({
       error: "Failed to submit application",
       hasError: true,
       errorCode: 500,
       message: error.message,
       errorObj: error,
+      diagnostics: {
+        timestamp: new Date().toISOString(),
+        errorCode: error.code,
+        errorCommand: error.command,
+      },
     });
   }
 }
