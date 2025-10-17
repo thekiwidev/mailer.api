@@ -42,12 +42,10 @@ const handleUpload = (req, res, next) => {
 // });
 
 // Configure Nodemailer transporter // @note: custom email config
-// For Render and cloud providers: Use Port 587 (TLS) instead of 465 (SSL)
-// Port 465 is often blocked by cloud provider firewalls
 const transporter = nodemailer.createTransport({
   host: process.env.CUSTOM_EMAIL_HOST || "imeldayayala.com.ng", // Custom domain SMTP host
-  port: process.env.CUSTOM_EMAIL_PORT || 587, // Port 587 (TLS) works better on cloud - change to 465 for SSL if needed
-  secure: process.env.CUSTOM_EMAIL_SECURE === "true", // true for port 465 (SSL), false for port 587 (STARTTLS)
+  port: process.env.CUSTOM_EMAIL_PORT || 465, // Port for SMTP (465 for SSL/TLS)
+  secure: process.env.CUSTOM_EMAIL_SECURE === "true", // true for port 465 (SSL)
   auth: {
     user: process.env.CUSTOM_EMAIL_SMTP_USER, // SMTP authentication user
     pass: process.env.CUSTOM_EMAIL_SMTP_PASS, // SMTP authentication password
@@ -56,7 +54,7 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 30000, // 30 seconds
   greetingTimeout: 10000, // Greeting timeout
   logger: true, // Enable logging
-  debug: false, // Set to true for detailed debugging
+  debug: process.env.DEBUG_SMTP === "true", // Enable detailed debugging if DEBUG_SMTP=true
   tls: {
     rejectUnauthorized: false, // Allow self-signed certificates
     minVersion: "TLSv1.2",
