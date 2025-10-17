@@ -3,7 +3,7 @@ const {
   travelApplicationMailer,
   studentApplicationMailer,
   handleUpload,
-} = require("./mailer");
+} = require("../controllers/mailer");
 
 const router = express.Router();
 

@@ -4,7 +4,7 @@ const {
   generateApplicationHTML,
   travelApplicationSections,
   studentApplicationSections,
-} = require("./utils");
+} = require("../utils");
 require("dotenv").config();
 
 // Configure multer for file uploads
@@ -43,13 +43,27 @@ const handleUpload = (req, res, next) => {
 
 // Configure Nodemailer transporter // @note: custom email config
 const transporter = nodemailer.createTransport({
-  host: "lon113.truehost.cloud", // Replace with your custom domain's SMTP host
-  port: 465, // Commonly used port for SMTP (use 465 for secure connections) or 587 for TLS
-  secure: true, // Set to true if using port 465 for secure connections
+  host: process.env.CUSTOM_EMAIL_HOST || "imeldayayala.com.ng", // Custom domain SMTP host
+  port: process.env.CUSTOM_EMAIL_PORT || 465, // Port for SMTP (465 for secure, 587 for TLS)
+  secure: process.env.CUSTOM_EMAIL_SECURE !== "false", // true for port 465, false for port 587
   auth: {
-    user: process.env.CUSTOM_EMAIL_KEY, // Your custom email address
-    pass: process.env.CUSTOM_EMAIL_VALUE, // Your email account password or app-specific password
+    user: process.env.CUSTOM_EMAIL_SMTP_USER, // SMTP authentication user
+    pass: process.env.CUSTOM_EMAIL_SMTP_PASS, // SMTP authentication password
   },
+  connectionTimeout: 15000, // 15 seconds
+  socketTimeout: 15000, // 15 seconds
+  tls: {
+    rejectUnauthorized: false, // Allow self-signed certificates
+  },
+});
+
+// Verify transporter connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ SMTP Connection Error:", error);
+  } else {
+    console.log("✅ SMTP Connection Verified Successfully");
+  }
 });
 
 async function travelApplicationMailer(req, res) {
@@ -70,19 +84,30 @@ async function travelApplicationMailer(req, res) {
 
     // Configure email options
     const mailOptions = {
-      from: "Travel Application System",
+      from: `"Travel Application System" <${process.env.CUSTOM_EMAIL_FROM}>`,
       to: process.env.RECIPIENT_EMAIL,
       subject: `New Travel Application from ${data.firstName}`,
       html: htmlContent,
       attachments: attachments,
+      replyTo: process.env.CUSTOM_EMAIL_FROM, // Add replyTo header
     };
 
+    console.log("📧 Sending travel application email to:", mailOptions.to);
+    console.log("📤 From:", mailOptions.from);
+
     // Send email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
-    console.error("Error submitting application:", error);
-    res.status(500).json({ error: "Failed to submit application" });
+    console.error("❌ Error submitting travel application:", error);
+    res.status(500).json({
+      error: "Failed to submit application",
+      hasError: true,
+      errorCode: 500,
+      message: error.message,
+      errorObj: error,
+    });
   }
 }
 
@@ -96,18 +121,29 @@ async function studentApplicationMailer(req, res) {
 
     // Configure email options
     const mailOptions = {
-      from: "Student Application System",
+      from: `"Student Application System" <${process.env.CUSTOM_EMAIL_FROM}>`,
       to: process.env.RECIPIENT_EMAIL,
       subject: `New Student Application from ${data.firstName}`,
       html: htmlContent,
+      replyTo: process.env.CUSTOM_EMAIL_FROM, // Add replyTo header
     };
 
+    console.log("📧 Sending student application email to:", mailOptions.to);
+    console.log("📤 From:", mailOptions.from);
+
     // Send email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
-    console.error("Error submitting application:", error);
-    res.status(500).json({ error: "Failed to submit application" });
+    console.error("❌ Error submitting student application:", error);
+    res.status(500).json({
+      error: "Failed to submit application",
+      hasError: true,
+      errorCode: 500,
+      message: error.message,
+      errorObj: error,
+    });
   }
 }
 
