@@ -50,28 +50,39 @@ const transporter = nodemailer.createTransport({
     user: process.env.CUSTOM_EMAIL_SMTP_USER, // SMTP authentication user
     pass: process.env.CUSTOM_EMAIL_SMTP_PASS, // SMTP authentication password
   },
-  connectionTimeout: 30000, // 30 seconds (increased from 15)
-  socketTimeout: 30000, // 30 seconds (increased from 15)
+  connectionTimeout: 30000, // 30 seconds
+  socketTimeout: 30000, // 30 seconds
   greetingTimeout: 10000, // Greeting timeout
   logger: true, // Enable logging
   debug: false, // Set to true for detailed debugging
   tls: {
     rejectUnauthorized: false, // Allow self-signed certificates
+    minVersion: "TLSv1.2",
   },
 });
 
-// Verify transporter connection on startup
+// Verify transporter connection on startup with timeout
 console.log("🔧 SMTP Configuration:");
 console.log("   Host:", process.env.CUSTOM_EMAIL_HOST);
 console.log("   Port:", process.env.CUSTOM_EMAIL_PORT);
 console.log("   Secure:", process.env.CUSTOM_EMAIL_SECURE);
 console.log("   User:", process.env.CUSTOM_EMAIL_SMTP_USER);
+console.log("🔍 Testing SMTP connection...");
+
+const verifyTimeout = setTimeout(() => {
+  console.warn("⏱️  SMTP verification taking longer than expected (45s)");
+}, 45000);
 
 transporter.verify((error, success) => {
+  clearTimeout(verifyTimeout);
   if (error) {
     console.error("❌ SMTP Connection Error at startup:", error.message);
     console.error("   Error code:", error.code);
-    console.error("   Full error:", error);
+    if (error.code === "ETIMEDOUT" || error.code === "ESOCKET") {
+      console.error(
+        "   ⚠️  Network connectivity issue - cannot reach SMTP server"
+      );
+    }
   } else {
     console.log("✅ SMTP Connection Verified Successfully");
   }
@@ -161,12 +172,6 @@ async function studentApplicationMailer(req, res) {
     console.error("   Message:", error.message);
     console.error("   Code:", error.code);
     console.error("   Command:", error.command);
-    console.error("   Full stack:", error.stack);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_FROM_PASS);
-    console.log("ENV: ", process.env.RECIPIENT_EMAIL);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_USER);
-    console.log("ENV: ", process.env.CUSTOM_EMAIL_SMTP_PASS);
 
     res.status(500).json({
       error: "Failed to submit application",
@@ -183,6 +188,39 @@ async function studentApplicationMailer(req, res) {
   }
 }
 
+// Health check and SMTP test endpoint
+async function testSMTPConnection(req, res) {
+  try {
+    console.log("🧪 Testing SMTP connection...");
+    const testMail = {
+      from: `"SMTP Test" <${process.env.CUSTOM_EMAIL_FROM}>`,
+      to: process.env.RECIPIENT_EMAIL,
+      subject: "SMTP Connection Test",
+      text: "If you receive this email, SMTP is working correctly!",
+    };
+
+    const info = await transporter.sendMail(testMail);
+    console.log("✅ Test email sent:", info.messageId);
+    res.status(200).json({
+      success: true,
+      message: "Test email sent successfully",
+      messageId: info.messageId,
+      testMailConfig: {
+        from: testMail.from,
+        to: testMail.to,
+      },
+    });
+  } catch (error) {
+    console.error("❌ SMTP Test Failed:", error.message);
+    res.status(500).json({
+      success: false,
+      error: "SMTP test failed",
+      message: error.message,
+      code: error.code,
+    });
+  }
+}
+
 // Example of how to use the upload middleware in your routes
 // const router = express.Router();
 // router.post('/travel-application', handleUpload, travelApplicationMailer);
@@ -192,4 +230,5 @@ module.exports = {
   handleUpload,
   travelApplicationMailer,
   studentApplicationMailer,
+  testSMTPConnection,
 };
