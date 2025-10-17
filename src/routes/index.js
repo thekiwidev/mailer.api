@@ -3,7 +3,7 @@ const {
   travelApplicationMailer,
   studentApplicationMailer,
   handleUpload,
-  testSMTPConnection,
+  testBrevoConnection,
 } = require("../controllers/mailer");
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.post(
 );
 router.post("/mailer/student-application", studentApplicationMailer);
 
-// Test endpoint to verify SMTP connection
-router.get("/mailer/test-smtp", testSMTPConnection);
+// Test endpoint to verify Brevo connection
+router.get("/mailer/test-brevo", testBrevoConnection);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 const multer = require("multer");
 const {
   generateApplicationHTML,
@@ -6,6 +6,14 @@ const {
   studentApplicationSections,
 } = require("../utils");
 require("dotenv").config();
+
+// Configure Brevo API
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications["api-key"];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+// Initialize Brevo Transactional Email API
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory
@@ -32,61 +40,34 @@ const handleUpload = (req, res, next) => {
   });
 };
 
-// // Configure Nodemailer transporter // @note: gmail email config
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.GMAIL_EMAIL_KEY,
-//     pass: process.env.GMAIL_EMAIL_VALUE,
-//   },
-// });
+// Verify Brevo configuration
+console.log("🔧 Brevo Configuration:");
+console.log("   API Key:", process.env.BREVO_API_KEY ? "✅ Set" : "❌ Not set");
+console.log("   From Email:", process.env.CUSTOM_EMAIL_FROM);
+console.log("   Recipient Email:", process.env.RECIPIENT_EMAIL);
+console.log("🔍 Testing Brevo connection...");
 
-// Configure Nodemailer transporter // @note: custom email config
-const transporter = nodemailer.createTransport({
-  host: process.env.CUSTOM_EMAIL_HOST || "imeldayayala.com.ng", // Custom domain SMTP host
-  port: process.env.CUSTOM_EMAIL_PORT || 465, // Port for SMTP (465 for SSL/TLS)
-  secure: process.env.CUSTOM_EMAIL_SECURE === "true", // true for port 465 (SSL)
-  auth: {
-    user: process.env.CUSTOM_EMAIL_SMTP_USER, // SMTP authentication user
-    pass: process.env.CUSTOM_EMAIL_SMTP_PASS, // SMTP authentication password
-  },
-  connectionTimeout: 30000, // 30 seconds
-  socketTimeout: 30000, // 30 seconds
-  greetingTimeout: 10000, // Greeting timeout
-  logger: true, // Enable logging
-  debug: process.env.DEBUG_SMTP === "true", // Enable detailed debugging if DEBUG_SMTP=true
-  tls: {
-    rejectUnauthorized: false, // Allow self-signed certificates
-    minVersion: "TLSv1.2",
-  },
-});
-
-// Verify transporter connection on startup with timeout
-console.log("🔧 SMTP Configuration:");
-console.log("   Host:", process.env.CUSTOM_EMAIL_HOST);
-console.log("   Port:", process.env.CUSTOM_EMAIL_PORT);
-console.log("   Secure:", process.env.CUSTOM_EMAIL_SECURE);
-console.log("   User:", process.env.CUSTOM_EMAIL_SMTP_USER);
-console.log("🔍 Testing SMTP connection...");
-
-const verifyTimeout = setTimeout(() => {
-  console.warn("⏱️  SMTP verification taking longer than expected (45s)");
-}, 45000);
-
-transporter.verify((error, success) => {
-  clearTimeout(verifyTimeout);
-  if (error) {
-    console.error("❌ SMTP Connection Error at startup:", error.message);
-    console.error("   Error code:", error.code);
-    if (error.code === "ETIMEDOUT" || error.code === "ESOCKET") {
-      console.error(
-        "   ⚠️  Network connectivity issue - cannot reach SMTP server"
-      );
-    }
-  } else {
-    console.log("✅ SMTP Connection Verified Successfully");
-  }
-});
+// Test Brevo connection
+apiInstance
+  .sendTransacEmail({
+    sender: {
+      name: "Test",
+      email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+    },
+    to: [
+      {
+        email: process.env.RECIPIENT_EMAIL || "developer@imeldayayala.com.ng",
+      },
+    ],
+    subject: "Brevo Configuration Test",
+    htmlContent: "<p>This is a configuration test email.</p>",
+  })
+  .then(() => {
+    console.log("✅ Brevo Connection Verified Successfully");
+  })
+  .catch((error) => {
+    console.error("❌ Brevo Connection Error:", error.message);
+  });
 
 async function travelApplicationMailer(req, res) {
   try {
@@ -97,47 +78,55 @@ async function travelApplicationMailer(req, res) {
       travelApplicationSections
     );
 
-    // Prepare attachments array
+    // Prepare attachments array for Brevo
     const attachments = files.map((file) => ({
-      filename: file.originalname,
-      content: file.buffer,
-      contentType: file.mimetype,
+      name: file.originalname,
+      content: file.buffer.toString("base64"),
+      type: file.mimetype,
     }));
 
-    // Configure email options
-    const mailOptions = {
-      from: `"Travel Application System" <${process.env.CUSTOM_EMAIL_FROM}>`,
-      to: process.env.RECIPIENT_EMAIL,
+    // Configure email for Brevo
+    const sendSmtpEmail = {
+      sender: {
+        name: "Travel Application System",
+        email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+      },
+      to: [
+        {
+          email: process.env.RECIPIENT_EMAIL || "developer@imeldayayala.com.ng",
+        },
+      ],
       subject: `New Travel Application from ${data.firstName}`,
-      html: htmlContent,
-      attachments: attachments,
-      replyTo: process.env.CUSTOM_EMAIL_FROM, // Add replyTo header
+      htmlContent: htmlContent,
+      attachment: attachments,
+      replyTo: {
+        email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+      },
     };
 
-    console.log("📧 Sending travel application email to:", mailOptions.to);
-    console.log("📤 From:", mailOptions.from);
+    console.log(
+      "📧 Sending travel application email to:",
+      sendSmtpEmail.to[0].email
+    );
+    console.log("📤 From:", sendSmtpEmail.sender.email);
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+    // Send email via Brevo
+    const info = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
     console.error("❌ Error submitting travel application");
     console.error("   Message:", error.message);
     console.error("   Code:", error.code);
-    console.error("   Command:", error.command);
-    console.error("   Full stack:", error.stack);
 
     res.status(500).json({
       error: "Failed to submit application",
       hasError: true,
       errorCode: 500,
       message: error.message,
-      errorObj: error,
       diagnostics: {
         timestamp: new Date().toISOString(),
         errorCode: error.code,
-        errorCommand: error.command,
       },
     });
   }
@@ -151,84 +140,94 @@ async function studentApplicationMailer(req, res) {
       studentApplicationSections
     );
 
-    // Configure email options
-    const mailOptions = {
-      from: `"Student Application System" <${process.env.CUSTOM_EMAIL_FROM}>`,
-      to: process.env.RECIPIENT_EMAIL,
+    // Configure email for Brevo
+    const sendSmtpEmail = {
+      sender: {
+        name: "Student Application System",
+        email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+      },
+      to: [
+        {
+          email: process.env.RECIPIENT_EMAIL || "developer@imeldayayala.com.ng",
+        },
+      ],
       subject: `New Student Application from ${data.firstName}`,
-      html: htmlContent,
-      replyTo: process.env.CUSTOM_EMAIL_FROM, // Add replyTo header
+      htmlContent: htmlContent,
+      replyTo: {
+        email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+      },
     };
 
-    console.log("📧 Sending student application email to:", mailOptions.to);
-    console.log("📤 From:", mailOptions.from);
+    console.log(
+      "📧 Sending student application email to:",
+      sendSmtpEmail.to[0].email
+    );
+    console.log("📤 From:", sendSmtpEmail.sender.email);
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+    // Send email via Brevo
+    const info = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log("✅ Email sent successfully:", info.messageId);
     res.status(200).json({ message: "Application submitted successfully!" });
   } catch (error) {
     console.error("❌ Error submitting student application");
     console.error("   Message:", error.message);
     console.error("   Code:", error.code);
-    console.error("   Command:", error.command);
 
     res.status(500).json({
       error: "Failed to submit application",
       hasError: true,
       errorCode: 500,
       message: error.message,
-      errorObj: error,
       diagnostics: {
         timestamp: new Date().toISOString(),
         errorCode: error.code,
-        errorCommand: error.command,
       },
     });
   }
 }
-
-// Health check and SMTP test endpoint
-async function testSMTPConnection(req, res) {
-  try {
-    console.log("🧪 Testing SMTP connection...");
-    const testMail = {
-      from: `"SMTP Test" <${process.env.CUSTOM_EMAIL_FROM}>`,
-      to: process.env.RECIPIENT_EMAIL,
-      subject: "SMTP Connection Test",
-      text: "If you receive this email, SMTP is working correctly!",
-    };
-
-    const info = await transporter.sendMail(testMail);
-    console.log("✅ Test email sent:", info.messageId);
-    res.status(200).json({
-      success: true,
-      message: "Test email sent successfully",
-      messageId: info.messageId,
-      testMailConfig: {
-        from: testMail.from,
-        to: testMail.to,
-      },
-    });
-  } catch (error) {
-    console.error("❌ SMTP Test Failed:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "SMTP test failed",
-      message: error.message,
-      code: error.code,
-    });
-  }
-}
-
-// Example of how to use the upload middleware in your routes
-// const router = express.Router();
-// router.post('/travel-application', handleUpload, travelApplicationMailer);
-// router.post('/student-application', studentApplicationMailer);
 
 module.exports = {
   handleUpload,
   travelApplicationMailer,
   studentApplicationMailer,
-  testSMTPConnection,
+  testBrevoConnection: async (req, res) => {
+    try {
+      console.log("🧪 Testing Brevo connection...");
+      const testMail = {
+        sender: {
+          name: "Brevo Test",
+          email: process.env.CUSTOM_EMAIL_FROM || "noreply@imeldayayala.com.ng",
+        },
+        to: [
+          {
+            email:
+              process.env.RECIPIENT_EMAIL || "developer@imeldayayala.com.ng",
+          },
+        ],
+        subject: "Brevo Connection Test",
+        htmlContent:
+          "<p>If you receive this email, Brevo is working correctly!</p>",
+      };
+
+      const info = await apiInstance.sendTransacEmail(testMail);
+      console.log("✅ Test email sent:", info.messageId);
+      res.status(200).json({
+        success: true,
+        message: "Test email sent successfully",
+        messageId: info.messageId,
+        testMailConfig: {
+          from: testMail.sender.email,
+          to: testMail.to[0].email,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Brevo Test Failed:", error.message);
+      res.status(500).json({
+        success: false,
+        error: "Brevo test failed",
+        message: error.message,
+        code: error.code,
+      });
+    }
+  },
 };
